@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ninja R — Service Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #39FF14;
+  --green-dim: #1a7a06;
+  --green-glow: rgba(57,255,20,0.25);
+  --bg: #0a0b0d;
+  --bg2: #0f1113;
+  --card: #13161a;
+  --border: rgba(57,255,20,0.18);
+  --border-dim: rgba(255,255,255,0.07);
+  --text: #e8ece8;
+  --text-muted: #6b7a6b;
+  --red: #ff3a3a;
+  --amber: #ffb020;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,11,13,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: env(safe-area-inset-top,0) 0 0;
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+}
+.logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700; font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--green);
+  text-shadow: 0 0 12px var(--green-glow);
+}
+.logo span { color: var(--text-muted); font-weight: 400; }
+.badge-km {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  padding: 4px 10px; border-radius: 20px;
+}
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  display: flex;
+  border-top: 1px solid var(--border-dim);
+  background: rgba(10,11,13,0.95);
+}
+.nav-tab {
+  flex: 1; padding: 12px 6px 10px;
+  text-align: center; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-muted);
+  border: none; background: none;
+  transition: color .2s;
+  position: relative;
+}
+.nav-tab.active { color: var(--green); }
+.nav-tab.active::after {
+  content: '';
+  position: absolute; bottom: 0; left: 20%; right: 20%;
+  height: 2px; background: var(--green);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--green);
+}
+
+/* ── PAGES ── */
+.page { display: none; padding: 20px 16px 100px; }
+.page.active { display: block; animation: fadeUp .3s ease; }
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--green-dim);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+  content: '';
+  display: inline-block; width: 20px; height: 2px;
+  background: var(--green); border-radius: 2px;
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px; font-weight: 700; letter-spacing: 1px;
+  margin-bottom: 16px;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* ── FORM FIELDS ── */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(57,255,20,0.1);
+}
+.field textarea { resize: none; min-height: 70px; }
+.field select option { background: #1a1d20; }
+
+/* ── 2-COL GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── CHECKLIST ── */
+.check-group { margin-bottom: 16px; }
+.check-group-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-dim);
+}
+.check-item {
+  display: flex; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  gap: 12px;
+}
+.check-item:last-child { border-bottom: none; }
+
+.check-box {
+  width: 22px; height: 22px; min-width: 22px;
+  border: 2px solid var(--border-dim);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  background: var(--bg2);
+}
+.check-item.checked .check-box {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 0 10px rgba(57,255,20,0.4);
+}
+.check-item.checked .check-box::after {
+  content: '✓';
+  color: #000; font-size: 13px; font-weight: 900; line-height: 1;
+}
+
+.check-label {
+  flex: 1;
+  font-size: 14px;
+}
+.check-item.checked .check-label { color: var(--text-muted); text-decoration: line-through; }
+
+.check-status {
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.status-ok { background: rgba(57,255,20,0.12); color: var(--green); }
+.status-ganti { background: rgba(255,176,32,0.12); color: var(--amber); }
+.status-perlu { background: rgba(255,58,58,0.12); color: var(--red); }
+
+/* ── SUBMIT BTN ── */
+.btn-submit {
+  width: 100%; padding: 16px;
+  background: var(--green);
+  color: #000; border: none;
+  border-radius: var(--radius);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(57,255,20,0.3);
+  transition: transform .15s, box-shadow .15s;
+  margin-top: 8px;
+}
+.btn-submit:active { transform: scale(0.98); }
+
+/* ── HISTORY LIST ── */
+.hist-item {
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.hist-item:active { border-color: var(--border); }
+.hist-item-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hist-date {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--green);
+}
+.hist-km {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  color: var(--text-muted);
+  background: var(--bg2);
+  padding: 3px 10px; border-radius: 20px;
+}
+.hist-bengkel {
+  font-size: 13px; color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 300;
+}
+.hist-chips {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.chip {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+  padding: 3px 9px; border-radius: 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  background: rgba(57,255,20,0.08);
+  color: var(--green);
+  border: 1px solid rgba(57,255,20,0.2);
+}
+.chip.amber { background: rgba(255,176,32,0.08); color: var(--amber); border-color: rgba(255,176,32,0.2); }
+.chip.red { background: rgba(255,58,58,0.08); color: var(--red); border-color: rgba(255,58,58,0.2); }
+
+.hist-expand {
+  display: none;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-dim);
+}
+.hist-expand.open { display: block; }
+
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 13px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row .label { color: var(--text-muted); }
+.detail-row .val { font-weight: 500; text-align: right; max-width: 60%; }
+
+.hist-del {
+  margin-top: 12px;
+  background: rgba(255,58,58,0.08);
+  border: 1px solid rgba(255,58,58,0.2);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ── DASHBOARD ── */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-box {
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.stat-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.stat-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+.stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+.timeline-item {
+  display: flex; gap: 14px;
+  padding-bottom: 20px;
+  position: relative;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute; left: 7px; top: 18px; bottom: 0;
+  width: 1px; background: var(--border-dim);
+}
+.timeline-item:last-child::before { display: none; }
+.tl-dot {
+  width: 16px; height: 16px; min-width: 16px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+  margin-top: 2px;
+}
+.tl-body { flex: 1; }
+.tl-date {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--text);
+}
+.tl-km { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.tl-items { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+.empty-text { font-size: 14px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: #000;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px;
+  padding: 12px 24px; border-radius: 30px;
+  opacity: 0; transition: all .3s;
+  pointer-events: none; z-index: 999;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(57,255,20,0.3);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── NEXT SERVICE BANNER ── */
+.next-service {
+  background: linear-gradient(135deg, rgba(57,255,20,0.08), rgba(57,255,20,0.02));
+  border: 1px solid rgba(57,255,20,0.25);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.ns-icon { font-size: 28px; }
+.ns-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--green);
+  font-family: 'Barlow Condensed', sans-serif;
+  margin-bottom: 3px;
+}
+.ns-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--text);
+}
+
+/* ── DIVIDER ── */
+.divider {
+  height: 1px; background: var(--border-dim);
+  margin: 20px 0;
+}
+
+/* ── SAFE BOTTOM ── */
+.safe-bottom { height: env(safe-area-inset-bottom, 20px); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">NINJA<span>R</span></div>
+    <div class="badge-km" id="headerKm">— KM</div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="goPage('dash')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="goPage('form')">➕ Input</button>
+    <button class="nav-tab" onclick="goPage('history')">📋 Riwayat</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<div id="page-dash" class="page active">
+
+  <div id="nextServiceBanner" class="next-service" style="display:none">
+    <div class="ns-icon">🔧</div>
+    <div>
+      <div class="ns-label">Service Berikutnya</div>
+      <div class="ns-val" id="nextServiceVal">—</div>
+    </div>
+  </div>
+
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-box">
+      <div class="stat-label">Total Service</div>
+      <div class="stat-val" id="statTotal">0</div>
+      <div class="stat-sub">kali</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">KM Terakhir</div>
+      <div class="stat-val" id="statKm">—</div>
+      <div class="stat-sub">kilometer</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Service Terakhir</div>
+      <div class="stat-val" id="statLast" style="font-size:18px">—</div>
+      <div class="stat-sub" id="statLastDays"></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Total Biaya</div>
+      <div class="stat-val" id="statBiaya" style="font-size:16px">—</div>
+      <div class="stat-sub">rupiah</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Timeline Perawatan</div>
+  <div id="timeline"><div class="empty"><div class="empty-icon">🏍️</div><div class="empty-text">Belum ada data service</div></div></div>
+</div>
+
+<!-- ════════════════════════════════ FORM INPUT ═══════════════════════════════ -->
+<div id="page-form" class="page">
+
+  <!-- INFO UMUM -->
+  <div class="card">
+    <div class="card-title">Info Service</div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Tanggal Service</label>
+        <input type="date" id="f_tanggal">
+      </div>
+      <div class="field">
+        <label>Odometer (KM)</label>
+        <input type="number" id="f_km" placeholder="mis. 12500">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Nama Bengkel / Lokasi</label>
+      <input type="text" id="f_bengkel" placeholder="mis. Kawasaki Semarang">
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Jenis Service</label>
+        <select id="f_jenis">
+          <option value="">Pilih...</option>
+          <option>Servis Rutin</option>
+          <option>Servis Besar</option>
+          <option>Ganti Komponen</option>
+          <option>Perbaikan Darurat</option>
+          <option>Modifikasi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Biaya (Rp)</label>
+        <input type="number" id="f_biaya" placeholder="mis. 250000">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>KM Service Berikutnya</label>
+      <input type="number" id="f_nextKm" placeholder="mis. 14500">
+    </div>
+  </div>
+
+  <!-- MESIN -->
+  <div class="card">
+    <div class="card-title">🔩 Mesin & Oli</div>
+    <div class="check-group">
+      <div class="check-group-title">Oli & Pendingin</div>
+      <div id="checks-mesin"></div>
+    </div>
+  </div>
+
+  <!-- BODI & KAKI -->
+  <div class="card">
+    <div class="card-title">⚙️ Kaki-kaki & Rem</div>
+    <div id="checks-kaki"></div>
+  </div>
+
+  <!-- KELISTRIKAN -->
+  <div class="card">
+    <div class="card-title">⚡ Kelistrikan</div>
+    <div id="checks-listrik"></div>
+  </div>
+
+  <!-- BAHAN BAKAR -->
+  <div class="card">
+    <div class="card-title">⛽ Bahan Bakar & Transmisi</div>
+    <div id="checks-bbm"></div>
+  </div>
+
+  <!-- CATATAN -->
+  <div class="card">
+    <div class="card-title">📝 Catatan Teknisi</div>
+    <div class="field">
+      <textarea id="f_catatan" rows="3" placeholder="Temuan, saran, atau catatan lainnya..."></textarea>
+    </div>
+  </div>
+
+  <button class="btn-submit" onclick="saveService()">SIMPAN DATA SERVICE</button>
+</div>
+
+<!-- ════════════════════════════════ RIWAYAT ═════════════════════════════════ -->
+<div id="page-history" class="page">
+  <div id="histList"><div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Belum ada riwayat service</div></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════ DATA ══════
+const STORAGE_KEY = 'ninjaR_services';
+
+const CHECKLISTS = {
+  mesin: [
+    { id: 'oli_mesin', label: 'Ganti Oli Mesin', defaultStatus: 'ganti' },
+    { id: 'filter_oli', label: 'Filter Oli', defaultStatus: 'ganti' },
+    { id: 'coolant', label: 'Air Radiator / Coolant', defaultStatus: 'ok' },
+    { id: 'busi', label: 'Busi', defaultStatus: 'ganti' },
+    { id: 'filter_udara', label: 'Filter Udara', defaultStatus: 'ok' },
+    { id: 'valve_clearance', label: 'Celah Klep', defaultStatus: 'ok' },
+    { id: 'rantai_mesin', label: 'Rantai Keteng / Cam Chain', defaultStatus: 'ok' },
+  ],
+  kaki: [
+    { id: 'ban_depan', label: 'Ban Depan', defaultStatus: 'ok' },
+    { id: 'ban_belakang', label: 'Ban Belakang', defaultStatus: 'ok' },
+    { id: 'tekanan_ban', label: 'Tekanan Angin Ban', defaultStatus: 'ok' },
+    { id: 'minyak_rem_depan', label: 'Minyak Rem Depan', defaultStatus: 'ok' },
+    { id: 'minyak_rem_belakang', label: 'Minyak Rem Belakang', defaultStatus: 'ok' },
+    { id: 'kampas_rem_depan', label: 'Kampas Rem Depan', defaultStatus: 'ok' },
+    { id: 'kampas_rem_belakang', label: 'Kampas Rem Belakang', defaultStatus: 'ok' },
+    { id: 'rantai_roda', label: 'Rantai Roda & Gear', defaultStatus: 'ok' },
+    { id: 'bearing_roda', label: 'Bearing Roda', defaultStatus: 'ok' },
+    { id: 'shock_depan', label: 'Suspensi Depan (Fork Oil)', defaultStatus: 'ok' },
+    { id: 'shock_belakang', label: 'Suspensi Belakang (Monosok)', defaultStatus: 'ok' },
+    { id: 'steer_bearing', label: 'Steer Bearing / As Kemudi', defaultStatus: 'ok' },
+  ],
+  listrik: [
+    { id: 'aki', label: 'Aki / Baterai', defaultStatus: 'ok' },
+    { id: 'lampu_depan', label: 'Lampu Depan (HL)', defaultStatus: 'ok' },
+    { id: 'lampu_belakang', label: 'Lampu Belakang & Stop', defaultStatus: 'ok' },
+    { id: 'sein', label: 'Lampu Sein (kiri & kanan)', defaultStatus: 'ok' },
+    { id: 'spidometer', label: 'Spidometer / Indikator', defaultStatus: 'ok' },
+    { id: 'kabel', label: 'Kondisi Kabel & Soket', defaultStatus: 'ok' },
+    { id: 'saklar', label: 'Saklar Stang', defaultStatus: 'ok' },
+  ],
+  bbm: [
+    { id: 'filter_bensin', label: 'Filter Bensin', defaultStatus: 'ok' },
+    { id: 'injektor', label: 'Injektor / Karburator', defaultStatus: 'ok' },
+    { id: 'throttle', label: 'Kabel Gas & Throttle', defaultStatus: 'ok' },
+    { id: 'kopling', label: 'Kabel / Sistem Kopling', defaultStatus: 'ok' },
+    { id: 'gear_ratio', label: 'Gear Depan & Belakang', defaultStatus: 'ok' },
+  ],
+};
+
+let formState = {};
+
+function initChecks() {
+  ['mesin','kaki','listrik','bbm'].forEach(group => {
+    const el = document.getElementById('checks-' + group);
+    formState[group] = {};
+    el.innerHTML = '';
+    CHECKLISTS[group].forEach(item => {
+      formState[group][item.id] = { checked: false, status: item.defaultStatus };
+      el.appendChild(buildCheckItem(group, item));
+    });
+  });
+}
+
+function buildCheckItem(group, item) {
+  const div = document.createElement('div');
+  div.className = 'check-item';
+  div.id = 'ci_' + item.id;
+  div.onclick = () => toggleCheck(group, item.id);
+
+  const statusLabels = { ok:'Dicek', ganti:'Diganti', perlu:'Perlu Perhatian' };
+  const s = formState[group][item.id].status;
+
+  div.innerHTML = `
+    <div class="check-box"></div>
+    <div class="check-label">${item.label}</div>
+    <select class="check-status status-${s}" onclick="event.stopPropagation()"
+      onchange="changeStatus('${group}','${item.id}',this)">
+      <option value="ok" ${s==='ok'?'selected':''}>✔ Dicek</option>
+      <option value="ganti" ${s==='ganti'?'selected':''}>🔄 Diganti</option>
+      <option value="perlu" ${s==='perlu'?'selected':''}>⚠️ Perlu Perhatian</option>
+    </select>`;
+
+  // Style select inline
+  const sel = div.querySelector('select');
+  sel.style.cssText = `
+    background:transparent; border:none; color:inherit;
+    font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:600;
+    padding:3px 8px; border-radius:20px; cursor:pointer; outline:none;
+    -webkit-appearance:none;
+  `;
+  applyStatusStyle(sel, s);
+  return div;
+}
+
+function applyStatusStyle(sel, s) {
+  const map = {
+    ok:    { bg:'rgba(57,255,20,0.12)',   color:'#39FF14' },
+    ganti: { bg:'rgba(255,176,32,0.12)', color:'#ffb020' },
+    perlu: { bg:'rgba(255,58,58,0.12)',   color:'#ff3a3a' },
+  };
+  const m = map[s] || map.ok;
+  sel.style.background = m.bg;
+  sel.style.color = m.color;
+}
+
+function toggleCheck(group, id) {
+  formState[group][id].checked = !formState[group][id].checked;
+  const el = document.getElementById('ci_' + id);
+  el.classList.toggle('checked', formState[group][id].checked);
+}
+
+function changeStatus(group, id, sel) {
+  formState[group][id].status = sel.value;
+  applyStatusStyle(sel, sel.value);
+}
+
+// ══════ SAVE ══════
+function saveService() {
+  const tanggal = document.getElementById('f_tanggal').value;
+  const km      = document.getElementById('f_km').value;
+  if (!tanggal || !km) { showToast('⚠️ Tanggal & KM wajib diisi!'); return; }
+
+  const record = {
+    id:       Date.now(),
+    tanggal:  tanggal,
+    km:       parseInt(km),
+    bengkel:  document.getElementById('f_bengkel').value || '—',
+    jenis:    document.getElementById('f_jenis').value || '—',
+    biaya:    parseInt(document.getElementById('f_biaya').value) || 0,
+    nextKm:   parseInt(document.getElementById('f_nextKm').value) || 0,
+    catatan:  document.getElementById('f_catatan').value || '',
+    checks:   JSON.parse(JSON.stringify(formState)),
+  };
+
+  const data = loadData();
+  data.push(record);
+  data.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+  saveData(data);
+
+  resetForm();
+  renderAll();
+  goPage('dash');
+  showToast('✓ Data service disimpan!');
+}
+
+function resetForm() {
+  ['f_tanggal','f_km','f_bengkel','f_biaya','f_nextKm','f_catatan'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('f_jenis').value = '';
+  initChecks();
+}
+
+// ══════ STORAGE ══════
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+// ══════ RENDER ══════
+function renderAll() {
+  const data = loadData();
+  renderDash(data);
+  renderHistory(data);
+  updateHeaderKm(data);
+}
+
+function updateHeaderKm(data) {
+  const el = document.getElementById('headerKm');
+  if (!data.length) { el.textContent = '— KM'; return; }
+  el.textContent = data[0].km.toLocaleString('id') + ' KM';
+}
+
+function renderDash(data) {
+  document.getElementById('statTotal').textContent = data.length;
+
+  if (!data.length) {
+    document.getElementById('statKm').textContent = '—';
+    document.getElementById('statLast').textContent = '—';
+    document.getElementById('statLastDays').textContent = '';
+    document.getElementById('statBiaya').textContent = '—';
+    document.getElementById('nextServiceBanner').style.display = 'none';
+    document.getElementById('timeline').innerHTML = '<div class="empty"><div class="empty-icon">🏍️</div><div class="empty-text">Belum ada data service</div></div>';
+    return;
+  }
+
+  const latest = data[0];
+  document.getElementById('statKm').textContent = latest.km.toLocaleString('id');
+
+  const d = new Date(latest.tanggal);
+  document.getElementById('statLast').textContent = d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+
+  const diff = Math.floor((Date.now() - d)/86400000);
+  document.getElementById('statLastDays').textContent = diff + ' hari lalu';
+
+  const totalBiaya = data.reduce((s,r) => s + (r.biaya||0), 0);
+  document.getElementById('statBiaya').textContent = 'Rp ' + totalBiaya.toLocaleString('id');
+
+  // Next service banner
+  const ns = document.getElementById('nextServiceBanner');
+  if (latest.nextKm > latest.km) {
+    ns.style.display = 'flex';
+    const sisa = latest.nextKm - latest.km;
+    document.getElementById('nextServiceVal').textContent = latest.nextKm.toLocaleString('id') + ' KM  (sisa ±' + sisa.toLocaleString('id') + ' KM)';
+  } else {
+    ns.style.display = 'none';
+  }
+
+  // Timeline
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = data.map(r => {
+    const items = getSummaryItems(r.checks);
+    const tDate = new Date(r.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+    return `<div class="timeline-item">
+      <div class="tl-dot"></div>
+      <div class="tl-body">
+        <div class="tl-date">${tDate}</div>
+        <div class="tl-km">${r.km.toLocaleString('id')} KM · ${r.bengkel} · ${r.jenis}</div>
+        <div class="tl-items">${items.slice(0,5).join(', ')}${items.length>5?' +lainnya…':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getSummaryItems(checks) {
+  if (!checks) return [];
+  const items = [];
+  Object.keys(checks).forEach(group => {
+    Object.keys(checks[group]).forEach(id => {
+      const c = checks[group][id];
+      if (c.checked) {
+        const all = [...CHECKLISTS.mesin,...CHECKLISTS.kaki,...CHECKLISTS.listrik,...CHECKLISTS.bbm];
+        const found = all.find(x => x.id === id);
+        if (found) items.push(found.label);
+      }
+    });
+  });
+  return items;
+}
+
+function renderHistory(data) {
+  const el = document.getElementById('histList');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Belum ada riwayat service</div></div>';
+    return;
+  }
+
+  el.innerHTML = data.map((r,i) => {
+    const tDate = new Date(r.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+    const chips = buildChips(r.checks);
+    const details = buildDetails(r);
+    return `<div class="hist-item">
+      <div class="hist-item-header">
+        <div class="hist-date">${tDate}</div>
+        <div class="hist-km">${r.km.toLocaleString('id')} KM</div>
+      </div>
+      <div class="hist-bengkel">📍 ${r.bengkel} &nbsp;·&nbsp; ${r.jenis}</div>
+      <div class="hist-chips">${chips}</div>
+      <div class="hist-expand" id="exp_${r.id}">
+        ${details}
+        <button class="hist-del" onclick="delService(${r.id})">🗑 Hapus Data Ini</button>
+      </div>
+      <div style="margin-top:10px;text-align:right">
+        <button onclick="toggleExpand(${r.id})" style="background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:'Barlow Condensed';letter-spacing:1px;" id="expbtn_${r.id}">DETAIL ▼</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildChips(checks) {
+  if (!checks) return '';
+  let ganti=0, perlu=0, ok=0;
+  Object.keys(checks).forEach(g => {
+    Object.keys(checks[g]).forEach(id => {
+      const c = checks[g][id];
+      if (!c.checked) return;
+      if (c.status==='ganti') ganti++;
+      else if (c.status==='perlu') perlu++;
+      else ok++;
+    });
+  });
+  let out = '';
+  if (ganti) out += `<span class="chip amber">🔄 ${ganti} Diganti</span>`;
+  if (perlu) out += `<span class="chip red">⚠️ ${perlu} Perlu Perhatian</span>`;
+  if (ok)    out += `<span class="chip">✔ ${ok} Dicek</span>`;
+  if (!out)  out = `<span class="chip">Belum ada item tercentang</span>`;
+  return out;
+}
+
+function buildDetails(r) {
+  let rows = `
+    <div class="detail-row"><span class="label">Jenis Service</span><span class="val">${r.jenis}</span></div>
+    <div class="detail-row"><span class="label">Bengkel</span><span class="val">${r.bengkel}</span></div>
+    <div class="detail-row"><span class="label">Biaya</span><span class="val">${r.biaya ? 'Rp '+r.biaya.toLocaleString('id') : '—'}</span></div>
+    <div class="detail-row"><span class="label">Target KM Berikutnya</span><span class="val">${r.nextKm ? r.nextKm.toLocaleString('id')+' KM' : '—'}</span></div>
+  `;
+
+  if (r.catatan) {
+    rows += `<div class="detail-row"><span class="label">Catatan</span><span class="val">${r.catatan}</span></div>`;
+  }
+
+  if (r.checks) {
+    const all = [...CHECKLISTS.mesin,...CHECKLISTS.kaki,...CHECKLISTS.listrik,...CHECKLISTS.bbm];
+    const statusLabel = { ok:'Dicek ✔', ganti:'Diganti 🔄', perlu:'Perlu ⚠️' };
+    let checkedItems = [];
+    Object.keys(r.checks).forEach(g => {
+      Object.keys(r.checks[g]).forEach(id => {
+        const c = r.checks[g][id];
+        if (!c.checked) return;
+        const found = all.find(x => x.id === id);
+        if (found) checkedItems.push({ label: found.label, status: c.status });
+      });
+    });
+
+    if (checkedItems.length) {
+      rows += `<div style="margin-top:10px;font-family:'Barlow Condensed';font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Item Diperiksa</div>`;
+      checkedItems.forEach(item => {
+        const colMap = { ok:'var(--green)', ganti:'var(--amber)', perlu:'var(--red)' };
+        rows += `<div class="detail-row">
+          <span class="label">${item.label}</span>
+          <span class="val" style="color:${colMap[item.status]}">${statusLabel[item.status]||'—'}</span>
+        </div>`;
+      });
+    }
+  }
+
+  return rows;
+}
+
+function toggleExpand(id) {
+  const el = document.getElementById('exp_'+id);
+  const btn = document.getElementById('expbtn_'+id);
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? 'TUTUP ▲' : 'DETAIL ▼';
+}
+
+function delService(id) {
+  if (!confirm('Hapus data service ini?')) return;
+  const data = loadData().filter(r => r.id !== id);
+  saveData(data);
+  renderAll();
+  showToast('🗑 Data dihapus');
+}
+
+// ══════ PAGE NAV ══════
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const tabs = { dash:0, form:1, history:2 };
+  document.querySelectorAll('.nav-tab')[tabs[name]].classList.add('active');
+}
+
+// ══════ TOAST ══════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ══════ INIT ══════
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f_tanggal').value = today;
+
+  initChecks();
+  renderAll();
+});
+</script>
+</body>
+</html>
